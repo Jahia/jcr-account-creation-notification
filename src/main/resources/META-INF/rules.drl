@@ -1,0 +1,23 @@
+package org.jahia.modules.jcr.account.creation.notification.rules
+
+// list any import classes here.
+import org.jahia.services.content.rules.*
+import org.jahia.services.content.JCRContentUtils
+import org.slf4j.Logger
+
+expander rules.dsl
+
+// declare any global variables here
+global User user
+global Service service
+global Logger logger
+global JCRContentUtils jcrUtils
+
+
+rule "Notify administrator about JCR user creation"
+    when
+       A new node is created
+		- the node has the type jnt:user
+    then
+        Notify administrator about new JCR user node
+end

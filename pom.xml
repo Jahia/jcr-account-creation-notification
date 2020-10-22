@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>jahia-modules</artifactId>
+        <groupId>org.jahia.modules</groupId>
+        <version>8.0.1.0</version>
+    </parent>
+    <groupId>org.jahia.modules</groupId>
+    <artifactId>jcr-account-creation-notification</artifactId>
+    <name>JCR account creation notification</name>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>bundle</packaging>
+    <description>This is the custom module (JCR account notification) for running on a Jahia server.</description>
+
+    <scm>
+        <connection>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</connection>
+        <developerConnection>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</developerConnection>
+        <url>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</url>
+        <tag>HEAD</tag>
+    </scm>
+    
+    <properties>
+        <jahia-depends>default</jahia-depends>
+        <jahia-deploy-on-site>all</jahia-deploy-on-site>
+        <jahia-module-signature>MC0CFD/IUrK85hKaxRd2N/KoXPbcKNkXAhUAlZvDPEVdzvrzw0joKWNVJoVNaos=</jahia-module-signature>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>jahia-public</id>
+            <name>Jahia Public Repository</name>
+            <url>https://devtools.jahia.com/nexus/content/groups/public</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <Jahia-Depends>default</Jahia-Depends>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
