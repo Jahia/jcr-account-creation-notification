@@ -18,6 +18,7 @@ rule "Notify administrator about JCR user creation"
     when
        A new node is created
 		- the node has the type jnt:user
+                - not in operation import
     then
         Notify administrator about new JCR user node
 end
