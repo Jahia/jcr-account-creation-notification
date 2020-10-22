@@ -10,5 +10,5 @@ The purpose of this module is to send an email notification to the server admini
 
 # Use
 
-- At soon as a JCR user is created, an email will be sent to the server administrator
+- As soon as a JCR user is created, an email will be sent to the server administrator
 
