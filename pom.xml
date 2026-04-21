@@ -9,7 +9,7 @@
     <groupId>org.jahia.community</groupId>
     <artifactId>jcr-account-creation-notification</artifactId>
     <name>JCR account creation notification</name>
-    <version>2.0.0-SNAPSHOT</version>
+    <version>2.0.0</version>
     <packaging>bundle</packaging>
     <description>Jahia module that sends an email notification when a JCR user account is created.</description>
 
@@ -17,7 +17,7 @@
         <connection>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</developerConnection>
         <url>https://github.com/Jahia/jcr-account-creation-notification</url>
-        <tag>HEAD</tag>
+        <tag>2_0_0</tag>
     </scm>
 
     <properties>
