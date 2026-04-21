@@ -1,0 +1,19 @@
+{
+  "label": {
+    "menu_entry": "JCR Account Creation Notification",
+    "title": "JCR Account Creation Notification Settings",
+    "description": "Configure the email sent to administrators when a JCR user account is created.",
+    "recipient": "Recipient",
+    "recipientPlaceholder": "Leave empty to use the Jahia default mail recipient",
+    "sender": "Sender",
+    "senderPlaceholder": "Leave empty to use the Jahia default mail sender",
+    "subject": "Subject",
+    "subjectHint": "Available token: {server}",
+    "body": "Body",
+    "bodyHint": "Available tokens: {username}, {creator}, {time}",
+    "save": "Save settings",
+    "saveSuccess": "Settings saved successfully.",
+    "saveError": "An error occurred while saving the settings.",
+    "invalidEmail": "Please enter a valid email address"
+  }
+}

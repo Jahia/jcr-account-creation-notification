@@ -4,27 +4,55 @@
     <parent>
         <artifactId>jahia-modules</artifactId>
         <groupId>org.jahia.modules</groupId>
-        <version>8.0.1.0</version>
+        <version>8.2.1.0</version>
     </parent>
-    <groupId>org.jahia.modules</groupId>
+    <groupId>org.jahia.community</groupId>
     <artifactId>jcr-account-creation-notification</artifactId>
     <name>JCR account creation notification</name>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
-    <description>This is the custom module (JCR account notification) for running on a Jahia server.</description>
+    <description>Jahia module that sends an email notification when a JCR user account is created.</description>
 
     <scm>
         <connection>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</connection>
         <developerConnection>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</developerConnection>
-        <url>scm:git:git@github.com:Jahia/jcr-account-creation-notification.git</url>
+        <url>https://github.com/Jahia/jcr-account-creation-notification</url>
         <tag>HEAD</tag>
     </scm>
-    
+
     <properties>
-        <jahia-depends>default</jahia-depends>
+        <yarn.arguments>build:production</yarn.arguments>
         <jahia-deploy-on-site>all</jahia-deploy-on-site>
-        <jahia-module-signature>MC0CFD/IUrK85hKaxRd2N/KoXPbcKNkXAhUAlZvDPEVdzvrzw0joKWNVJoVNaos=</jahia-module-signature>
+        <jahia-module-type>system</jahia-module-type>
+        <jahia-depends>default,graphql-dxm-provider,richtext-ckeditor5</jahia-depends>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java</artifactId>
+            <version>${graphql-java.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.graphql-java-kickstart</groupId>
+            <artifactId>graphql-java-servlet</artifactId>
+            <version>${graphql-java-servlet.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.graphql-java</groupId>
+            <artifactId>graphql-java-annotations</artifactId>
+            <version>${graphql-java-annotations.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jahia.modules</groupId>
+            <artifactId>graphql-dxm-provider</artifactId>
+            <version>3.4.0</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
     <repositories>
         <repository>
@@ -44,12 +72,47 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.0</version>
+                <executions>
+                    <execution>
+                        <id>npm install node and yarn</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install-node-and-yarn</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>v22.6.0</nodeVersion>
+                            <yarnVersion>v1.22.21</yarnVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>yarn install</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>yarn post-install</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>${yarn.arguments}</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <Jahia-Depends>default</Jahia-Depends>
+                        <_dsannotations>org.jahia.modules.jcraccountcreationnotification.*</_dsannotations>
                     </instructions>
                 </configuration>
             </plugin>
