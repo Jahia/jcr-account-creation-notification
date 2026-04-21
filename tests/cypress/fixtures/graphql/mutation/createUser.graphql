@@ -1,0 +1,7 @@
+mutation createUser($name: String!) {
+    jcr(workspace: EDIT) {
+        addNode(parentPathOrId: "/users", name: $name, primaryNodeType: "jnt:user") {
+            uuid
+        }
+    }
+}

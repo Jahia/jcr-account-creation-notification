@@ -1,0 +1,8 @@
+query {
+    jcrAccountCreationNotificationSettings {
+        recipient
+        sender
+        subject
+        body
+    }
+}
