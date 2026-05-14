@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useMutation, useQuery} from '@apollo/client';
 import {useTranslation} from 'react-i18next';
 import {Button, Loader, Typography} from '@jahia/moonstone';
@@ -77,6 +77,13 @@ export const JcrAccountCreationNotificationAdmin = () => {
     const {t} = useTranslation('jcr-account-creation-notification');
     const [saveStatus, setSaveStatus] = useState(null);
     const [errors, setErrors] = useState({recipient: '', sender: ''});
+    const recipientInputRef = useRef(null);
+    const senderInputRef = useRef(null);
+    const saveLiveRef = useRef(null);
+
+    useEffect(() => {
+        document.title = `${t('label.title')} — Jahia Administration`;
+    }, [t]);
 
     const [formState, setFormState] = useState({
         recipient: '',
@@ -126,7 +133,13 @@ export const JcrAccountCreationNotificationAdmin = () => {
         const recipientError = validateEmailField(formState.recipient);
         const senderError = validateEmailField(formState.sender);
         setErrors({recipient: recipientError, sender: senderError});
-        if (recipientError || senderError) {
+        if (recipientError) {
+            recipientInputRef.current?.focus();
+            return;
+        }
+
+        if (senderError) {
+            senderInputRef.current?.focus();
             return;
         }
 
@@ -145,13 +158,19 @@ export const JcrAccountCreationNotificationAdmin = () => {
             console.error('Failed to save settings:', err);
             setSaveStatus('error');
         }
+
+        setTimeout(() => saveLiveRef.current?.focus(), 50);
     };
 
     const hasErrors = Boolean(errors.recipient || errors.sender);
 
+    const saveLiveMsg = saveStatus === 'success' ? t('label.saveSuccess') :
+        saveStatus === 'error' ? t('label.saveError') : '';
+
     if (loading) {
         return (
-            <div className={styles.jacn_loading}>
+            <div className={styles.jacn_loading} role="status">
+                <span className={styles.jacn_sr_only}>{t('label.loading')}</span>
                 <Loader size="big"/>
             </div>
         );
@@ -159,6 +178,18 @@ export const JcrAccountCreationNotificationAdmin = () => {
 
     return (
         <div className={styles.jacn_container}>
+            {/* Persistent live region — always in DOM so AT registers it before status changes */}
+            <div
+                ref={saveLiveRef}
+                tabIndex={-1}
+                role={saveStatus === 'error' ? 'alert' : 'status'}
+                aria-live={saveStatus === 'error' ? 'assertive' : 'polite'}
+                aria-atomic="true"
+                className={styles.jacn_sr_only}
+            >
+                {saveLiveMsg}
+            </div>
+
             <div className={styles.jacn_header}>
                 <h2>{t('label.title')}</h2>
             </div>
@@ -172,17 +203,24 @@ export const JcrAccountCreationNotificationAdmin = () => {
                     <label className={styles.jacn_label} htmlFor="jacn-recipient">
                         {t('label.recipient')}
                     </label>
+                    <span id="jacn-recipient-hint" className={styles.jacn_sr_only}>
+                        {t('label.recipientPlaceholder')}
+                    </span>
                     <input
-                        type="text"
+                        ref={recipientInputRef}
+                        type="email"
                         id="jacn-recipient"
                         className={`${styles.jacn_input}${errors.recipient ? ` ${styles['jacn_input--error']}` : ''}`}
                         value={formState.recipient}
                         placeholder={t('label.recipientPlaceholder')}
+                        autoComplete="email"
+                        aria-invalid={Boolean(errors.recipient)}
+                        aria-describedby={['jacn-recipient-hint', errors.recipient ? 'jacn-recipient-error' : ''].filter(Boolean).join(' ')}
                         onChange={handleChange('recipient')}
                         onBlur={handleBlur('recipient')}
                     />
                     {errors.recipient && (
-                        <span className={styles.jacn_errorMsg}>{errors.recipient}</span>
+                        <span id="jacn-recipient-error" className={styles.jacn_errorMsg}>{errors.recipient}</span>
                     )}
                 </div>
 
@@ -190,17 +228,24 @@ export const JcrAccountCreationNotificationAdmin = () => {
                     <label className={styles.jacn_label} htmlFor="jacn-sender">
                         {t('label.sender')}
                     </label>
+                    <span id="jacn-sender-hint" className={styles.jacn_sr_only}>
+                        {t('label.senderPlaceholder')}
+                    </span>
                     <input
-                        type="text"
+                        ref={senderInputRef}
+                        type="email"
                         id="jacn-sender"
                         className={`${styles.jacn_input}${errors.sender ? ` ${styles['jacn_input--error']}` : ''}`}
                         value={formState.sender}
                         placeholder={t('label.senderPlaceholder')}
+                        autoComplete="email"
+                        aria-invalid={Boolean(errors.sender)}
+                        aria-describedby={['jacn-sender-hint', errors.sender ? 'jacn-sender-error' : ''].filter(Boolean).join(' ')}
                         onChange={handleChange('sender')}
                         onBlur={handleBlur('sender')}
                     />
                     {errors.sender && (
-                        <span className={styles.jacn_errorMsg}>{errors.sender}</span>
+                        <span id="jacn-sender-error" className={styles.jacn_errorMsg}>{errors.sender}</span>
                     )}
                 </div>
 
@@ -213,16 +258,23 @@ export const JcrAccountCreationNotificationAdmin = () => {
                         id="jacn-subject"
                         className={styles.jacn_input}
                         value={formState.subject}
+                        aria-describedby="jacn-subject-hint"
                         onChange={handleChange('subject')}
                     />
-                    <span className={styles.jacn_tokenHint}>{t('label.subjectHint')}</span>
+                    <span id="jacn-subject-hint" className={styles.jacn_fieldHint}>{t('label.subjectHint')}</span>
                 </div>
 
                 <div className={styles.jacn_fieldGroup}>
-                    <label className={styles.jacn_label}>
+                    {/* aria-hidden — CKEditor renders a contenteditable, not a native input;
+                        the editor wrapper carries aria-labelledby instead */}
+                    <span id="jacn-body-label" className={styles.jacn_label} aria-hidden="false">
                         {t('label.body')}
-                    </label>
-                    <div className={`${styles.jacn_editor}${saving ? ` ${styles['jacn_editor--disabled']}` : ''}`}>
+                    </span>
+                    <div
+                        className={`${styles.jacn_editor}${saving ? ` ${styles['jacn_editor--disabled']}` : ''}`}
+                        aria-labelledby="jacn-body-label"
+                        aria-describedby="jacn-body-hint"
+                    >
                         <CKEditor
                             editor={ClassicEditor}
                             config={editorConfig}
@@ -231,19 +283,19 @@ export const JcrAccountCreationNotificationAdmin = () => {
                             onChange={handleBodyChange}
                         />
                     </div>
-                    <span className={styles.jacn_tokenHint}>{t('label.bodyHint')}</span>
+                    <span id="jacn-body-hint" className={styles.jacn_fieldHint}>{t('label.bodyHint')}</span>
                 </div>
             </div>
 
             <div className={styles.jacn_actions}>
                 {saveStatus === 'success' && (
-                    <div className={`${styles.jacn_alert} ${styles['jacn_alert--success']}`}>
-                        {t('label.saveSuccess')}
+                    <div aria-hidden="true" className={`${styles.jacn_alert} ${styles['jacn_alert--success']}`}>
+                        <span className={styles.jacn_alertIcon}>✓</span> {t('label.saveSuccess')}
                     </div>
                 )}
                 {saveStatus === 'error' && (
-                    <div className={`${styles.jacn_alert} ${styles['jacn_alert--error']}`}>
-                        {t('label.saveError')}
+                    <div aria-hidden="true" className={`${styles.jacn_alert} ${styles['jacn_alert--error']}`}>
+                        <span className={styles.jacn_alertIcon}>✕</span> {t('label.saveError')}
                     </div>
                 )}
                 <Button

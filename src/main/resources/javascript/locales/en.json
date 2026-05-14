@@ -3,6 +3,7 @@
     "menu_entry": "JCR Account Creation Notification",
     "title": "JCR Account Creation Notification Settings",
     "description": "Configure the email sent to administrators when a JCR user account is created.",
+    "loading": "Loading, please wait.",
     "recipient": "Recipient",
     "recipientPlaceholder": "Leave empty to use the Jahia default mail recipient",
     "sender": "Sender",
