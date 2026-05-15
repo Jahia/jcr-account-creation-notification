@@ -79,7 +79,8 @@ export const JcrAccountCreationNotificationAdmin = () => {
     const [errors, setErrors] = useState({recipient: '', sender: ''});
     const recipientInputRef = useRef(null);
     const senderInputRef = useRef(null);
-    const saveLiveRef = useRef(null);
+    const formRef = useRef(null);
+    const prevLoadingRef = useRef(true);
 
     useEffect(() => {
         document.title = `${t('label.title')} — Jahia Administration`;
@@ -108,6 +109,14 @@ export const JcrAccountCreationNotificationAdmin = () => {
     });
 
     const [saveSettings, {loading: saving}] = useMutation(SAVE_SETTINGS);
+
+    useEffect(() => {
+        if (prevLoadingRef.current && !loading && formRef.current) {
+            formRef.current.focus();
+        }
+
+        prevLoadingRef.current = loading;
+    }, [loading]);
 
     const validateEmailField = value => (value && !isValidEmail(value)) ? t('label.invalidEmail') : '';
 
@@ -159,13 +168,9 @@ export const JcrAccountCreationNotificationAdmin = () => {
             setSaveStatus('error');
         }
 
-        setTimeout(() => saveLiveRef.current?.focus(), 50);
     };
 
     const hasErrors = Boolean(errors.recipient || errors.sender);
-
-    const saveLiveMsg = saveStatus === 'success' ? t('label.saveSuccess') :
-        saveStatus === 'error' ? t('label.saveError') : '';
 
     if (loading) {
         return (
@@ -178,16 +183,22 @@ export const JcrAccountCreationNotificationAdmin = () => {
 
     return (
         <div className={styles.jacn_container}>
-            {/* Persistent live region — always in DOM so AT registers it before status changes */}
+            {/* SC 4.1.3: two fixed-role live regions always in DOM — AT registers roles at mount */}
             <div
-                ref={saveLiveRef}
-                tabIndex={-1}
-                role={saveStatus === 'error' ? 'alert' : 'status'}
-                aria-live={saveStatus === 'error' ? 'assertive' : 'polite'}
+                role="status"
+                aria-live="polite"
                 aria-atomic="true"
                 className={styles.jacn_sr_only}
             >
-                {saveLiveMsg}
+                {saveStatus === 'success' ? t('label.saveSuccess') : ''}
+            </div>
+            <div
+                role="alert"
+                aria-live="assertive"
+                aria-atomic="true"
+                className={styles.jacn_sr_only}
+            >
+                {saveStatus === 'error' ? t('label.saveError') : ''}
             </div>
 
             <div className={styles.jacn_header}>
@@ -198,7 +209,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
                 <Typography>{t('label.description')}</Typography>
             </div>
 
-            <div className={styles.jacn_form}>
+            <div ref={formRef} tabIndex={-1} aria-label={t('label.title')} className={styles.jacn_form}>
                 <div className={styles.jacn_fieldGroup}>
                     <label className={styles.jacn_label} htmlFor="jacn-recipient">
                         {t('label.recipient')}
@@ -214,7 +225,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
                         value={formState.recipient}
                         placeholder={t('label.recipientPlaceholder')}
                         autoComplete="email"
-                        aria-invalid={Boolean(errors.recipient)}
+                        aria-invalid={errors.recipient ? 'true' : undefined}
                         aria-describedby={['jacn-recipient-hint', errors.recipient ? 'jacn-recipient-error' : ''].filter(Boolean).join(' ')}
                         onChange={handleChange('recipient')}
                         onBlur={handleBlur('recipient')}
@@ -239,7 +250,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
                         value={formState.sender}
                         placeholder={t('label.senderPlaceholder')}
                         autoComplete="email"
-                        aria-invalid={Boolean(errors.sender)}
+                        aria-invalid={errors.sender ? 'true' : undefined}
                         aria-describedby={['jacn-sender-hint', errors.sender ? 'jacn-sender-error' : ''].filter(Boolean).join(' ')}
                         onChange={handleChange('sender')}
                         onBlur={handleBlur('sender')}
@@ -265,15 +276,11 @@ export const JcrAccountCreationNotificationAdmin = () => {
                 </div>
 
                 <div className={styles.jacn_fieldGroup}>
-                    {/* aria-hidden — CKEditor renders a contenteditable, not a native input;
-                        the editor wrapper carries aria-labelledby instead */}
-                    <span id="jacn-body-label" className={styles.jacn_label} aria-hidden="false">
+                    <span id="jacn-body-label" className={styles.jacn_label}>
                         {t('label.body')}
                     </span>
                     <div
                         className={`${styles.jacn_editor}${saving ? ` ${styles['jacn_editor--disabled']}` : ''}`}
-                        aria-labelledby="jacn-body-label"
-                        aria-describedby="jacn-body-hint"
                     >
                         <CKEditor
                             editor={ClassicEditor}
@@ -281,6 +288,11 @@ export const JcrAccountCreationNotificationAdmin = () => {
                             disabled={saving}
                             data={formState.body}
                             onChange={handleBodyChange}
+                            onReady={editor => {
+                                const root = editor.editing.view.getDomRoot();
+                                root.setAttribute('aria-labelledby', 'jacn-body-label');
+                                root.setAttribute('aria-describedby', 'jacn-body-hint');
+                            }}
                         />
                     </div>
                     <span id="jacn-body-hint" className={styles.jacn_fieldHint}>{t('label.bodyHint')}</span>
@@ -300,6 +312,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
                 )}
                 <Button
                     label={t('label.save')}
+                    type="button"
                     variant="primary"
                     isDisabled={saving || hasErrors}
                     onClick={handleSave}

@@ -34,7 +34,8 @@
 
 .jacn_description {
     margin-bottom: 1.5rem;
-    color: #666;
+    /* #595959 on white ≈ 7.0:1 — replaces #666 which could fail on grey panel backgrounds */
+    color: #595959;
 }
 
 .jacn_form {
