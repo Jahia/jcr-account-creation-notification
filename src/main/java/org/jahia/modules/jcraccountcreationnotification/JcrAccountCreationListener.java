@@ -103,14 +103,49 @@ public final class JcrAccountCreationListener implements EventListener {
 
         final String sender = StringUtils.defaultIfEmpty(config.getSender(), mailService.defaultSender());
         final String recipient = StringUtils.defaultIfEmpty(config.getRecipient(), mailService.defaultRecipient());
-        final String subject = config.getSubject().replace("{server}", serverName);
+        final String subject = sanitizeHeader(config.getSubject().replace("{server}", serverName));
         final String body = config.getBody()
-                .replace("{username}", username)
-                .replace("{creator}", creator)
-                .replace("{time}", creationTime);
+                .replace("{username}", escapeHtml(username))
+                .replace("{creator}", escapeHtml(creator))
+                .replace("{time}", escapeHtml(creationTime));
 
-        LOGGER.info("Sending JCR account creation notification for user '{}'", username);
+        if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Sending JCR account creation notification for user '{}'", sanitizeForLog(username));
+        }
         mailService.sendMessage(sender, recipient, null, null, subject, null, body);
+    }
+
+    private static String sanitizeForLog(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replaceAll("[\\r\\n\\t]", "_");
+    }
+
+    private static String sanitizeHeader(String value) {
+        if (value == null) {
+            return null;
+        }
+        return value.replaceAll("[\\r\\n]", " ");
+    }
+
+    private static String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        final StringBuilder sb = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            final char c = value.charAt(i);
+            switch (c) {
+                case '&': sb.append("&amp;"); break;
+                case '<': sb.append("&lt;"); break;
+                case '>': sb.append("&gt;"); break;
+                case '"': sb.append("&quot;"); break;
+                case '\'': sb.append("&#39;"); break;
+                default: sb.append(c); break;
+            }
+        }
+        return sb.toString();
     }
 
     private static String resolveServerName() {
