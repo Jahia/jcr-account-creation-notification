@@ -70,5 +70,5 @@ yarn install
 - The listener only fires for `NODE_ADDED` events on `jnt:user` nodes directly under `/users` — accounts created under `/sites/{siteKey}/users` fire a separate observation path and are **not** caught by this listener
 - On `@Activate`, if login to the `default` workspace fails, the listener is silently not registered — check logs for `Failed to register JCR account creation listener`
 - The `observationSession` is held open for the module lifetime; it is closed in `@Deactivate` — do not close it elsewhere
-- `{server}` in the subject template is the hostname from `InetAddress.getLocalHost().getHostName()` — may return a container ID in Docker
+- `{server}` in the subject template uses `SettingsBean.getServer()` first, falling back to `InetAddress.getLocalHost().getHostName()` (may return a container ID in Docker) and finally `"unknown"`
 - CSS Modules: match in Cypress with `[class*="jacn_..."]`
