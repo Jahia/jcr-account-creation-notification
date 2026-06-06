@@ -77,6 +77,10 @@ public final class JcrAccountCreationListener implements EventListener {
 
     @Override
     public void onEvent(EventIterator events) {
+        if (observationSession == null) {
+            LOGGER.warn("JCR account creation listener is not registered (activation failed); event ignored");
+            return;
+        }
         if (events instanceof JCREventIterator
                 && ((JCREventIterator) events).getOperationType() == JCRObservationManager.IMPORT) {
             return;
