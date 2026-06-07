@@ -41,10 +41,10 @@ public class JcrAccountCreationNotificationMutationExtension {
             @GraphQLName("subject") @GraphQLDescription("Subject template — token: {server}") String subject,
             @GraphQLName("body") @GraphQLDescription("Body template — tokens: {username}, {creator}, {time}") String body) {
         if (!isValidEmail(recipient)) {
-            throw new IllegalArgumentException("Invalid recipient email address: " + recipient);
+            throw new IllegalArgumentException("Invalid recipient email address");
         }
         if (!isValidEmail(sender)) {
-            throw new IllegalArgumentException("Invalid sender email address: " + sender);
+            throw new IllegalArgumentException("Invalid sender email address");
         }
         try {
             final ConfigurationAdmin configAdmin = BundleUtils.getOsgiService(ConfigurationAdmin.class, null);
