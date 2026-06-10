@@ -24,6 +24,7 @@ import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.regex.Pattern;
 
 @Component(immediate = true, service = JcrAccountCreationListener.class)
 public final class JcrAccountCreationListener implements EventListener {
@@ -31,6 +32,11 @@ public final class JcrAccountCreationListener implements EventListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(JcrAccountCreationListener.class);
     private static final String USERS_PATH = "/users";
     private static final String JNT_USER = "jnt:user";
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    private static final String CRLF_PATTERN = "[\\r\\n]";
+    private static final String HEADER_REPLACEMENT = " ";
+    private static final String LOG_CONTROL_PATTERN = "[\\r\\n\\t]";
+    private static final String LOG_REPLACEMENT = "_";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter
             .ofPattern("yyyy/MM/dd 'at' HH:mm:ss z")
             .withZone(ZoneId.systemDefault());
@@ -105,35 +111,49 @@ public final class JcrAccountCreationListener implements EventListener {
         final String creationTime = DATE_FORMATTER.format(Instant.ofEpochMilli(event.getDate()));
         final String serverName = resolveServerName();
 
-        final String sender = StringUtils.defaultIfEmpty(config.getSender(), mailService.defaultSender());
-        final String recipient = StringUtils.defaultIfEmpty(config.getRecipient(), mailService.defaultRecipient());
-        final String subject = sanitizeHeader(config.getSubject().replace("{server}", serverName));
-        final String body = config.getBody()
+        final String sender = sanitizeHeader(StringUtils.defaultIfEmpty(config.getSender(), mailService.defaultSender()));
+        final String recipient = sanitizeHeader(StringUtils.defaultIfEmpty(config.getRecipient(), mailService.defaultRecipient()));
+        final String subject = sanitizeHeader(StringUtils.defaultString(config.getSubject()).replace("{server}", serverName));
+        final String body = StringUtils.defaultString(config.getBody())
                 .replace("{username}", escapeHtml(username))
                 .replace("{creator}", escapeHtml(creator))
                 .replace("{time}", escapeHtml(creationTime));
 
+        if (!isValidEmail(recipient)) {
+            LOGGER.warn("Skipping JCR account creation notification: recipient is missing or has an invalid email format");
+            return;
+        }
+
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Sending JCR account creation notification for user '{}'", sanitizeForLog(username));
         }
-        mailService.sendMessage(sender, recipient, null, null, subject, null, body);
+        try {
+            mailService.sendMessage(sender, recipient, null, null, subject, null, body);
+        } catch (RuntimeException e) {
+            // A mail/SMTP failure must not break JCR account creation; log and continue.
+            LOGGER.error("Failed to send JCR account creation notification", e);
+        }
     }
 
-    private static String sanitizeForLog(String value) {
+    static boolean isValidEmail(String email) {
+        return email != null && !email.isEmpty() && EMAIL_PATTERN.matcher(email).matches();
+    }
+
+    static String sanitizeForLog(String value) {
         if (value == null) {
             return null;
         }
-        return value.replaceAll("[\\r\\n\\t]", "_");
+        return value.replaceAll(LOG_CONTROL_PATTERN, LOG_REPLACEMENT);
     }
 
-    private static String sanitizeHeader(String value) {
+    static String sanitizeHeader(String value) {
         if (value == null) {
             return null;
         }
-        return value.replaceAll("[\\r\\n]", " ");
+        return value.replaceAll(CRLF_PATTERN, HEADER_REPLACEMENT);
     }
 
-    private static String escapeHtml(String value) {
+    static String escapeHtml(String value) {
         if (value == null) {
             return "";
         }
