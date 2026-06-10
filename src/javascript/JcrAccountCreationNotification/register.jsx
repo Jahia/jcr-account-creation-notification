@@ -6,7 +6,7 @@ export default () => {
     console.debug('%c jcr-account-creation-notification: activation in progress', 'color: #006633');
     registry.add('adminRoute', 'jcrAccountCreationNotification', {
         targets: ['administration-server-configuration:21'],
-        requiredPermission: 'admin',
+        requiredPermission: 'jcrAccountCreationNotificationAdmin',
         label: 'jcr-account-creation-notification:label.menu_entry',
         isSelectable: true,
         render: () => React.createElement(JcrAccountCreationNotificationAdmin)
