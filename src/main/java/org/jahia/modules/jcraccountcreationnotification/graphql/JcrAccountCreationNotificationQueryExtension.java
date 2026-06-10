@@ -20,7 +20,7 @@ public class JcrAccountCreationNotificationQueryExtension {
     @GraphQLField
     @GraphQLName("jcrAccountCreationNotificationSettings")
     @GraphQLDescription("Returns the current JCR account creation notification mail settings")
-    @GraphQLRequiresPermission("admin")
+    @GraphQLRequiresPermission("jcrAccountCreationNotificationAdmin")
     public static GqlSettings settings() {
         final JcrAccountCreationNotificationConfig config =
                 BundleUtils.getOsgiService(JcrAccountCreationNotificationConfig.class, null);

@@ -34,7 +34,7 @@ public class JcrAccountCreationNotificationMutationExtension {
     @GraphQLField
     @GraphQLName("jcrAccountCreationNotificationSaveSettings")
     @GraphQLDescription("Saves the JCR account creation notification mail settings")
-    @GraphQLRequiresPermission("admin")
+    @GraphQLRequiresPermission("jcrAccountCreationNotificationAdmin")
     public static Boolean saveSettings(
             @GraphQLName("recipient") @GraphQLDescription("Custom recipient email (optional, leave empty to use MailService default)") String recipient,
             @GraphQLName("sender") @GraphQLDescription("Custom sender email (optional, leave empty to use MailService default)") String sender,
