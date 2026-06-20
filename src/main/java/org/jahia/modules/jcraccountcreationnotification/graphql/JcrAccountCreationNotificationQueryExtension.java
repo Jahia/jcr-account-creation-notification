@@ -9,6 +9,14 @@ import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission
 import org.jahia.modules.jcraccountcreationnotification.JcrAccountCreationNotificationConfig;
 import org.jahia.osgi.BundleUtils;
 
+/**
+ * GraphQL query extension for JCR account-creation notification settings.
+ *
+ * <p>graphql-dxm instantiates GraphQL extension classes itself (not via CDI/OSGi DS),
+ * so {@code @Reference} injection is not available here. {@link BundleUtils#getOsgiService}
+ * is therefore used to look up {@link JcrAccountCreationNotificationConfig} at call time —
+ * this is the established pattern for graphql-dxm extensions in this module.
+ */
 @GraphQLTypeExtension(DXGraphQLProvider.Query.class)
 @GraphQLName("JcrAccountCreationNotificationQueries")
 @GraphQLDescription("JCR Account Creation Notification queries")
@@ -22,6 +30,8 @@ public class JcrAccountCreationNotificationQueryExtension {
     @GraphQLDescription("Returns the current JCR account creation notification mail settings")
     @GraphQLRequiresPermission("jcrAccountCreationNotificationAdmin")
     public static GqlSettings settings() {
+        // BundleUtils.getOsgiService is used instead of @Reference because graphql-dxm
+        // instantiates extension classes outside the OSGi DS container.
         final JcrAccountCreationNotificationConfig config =
                 BundleUtils.getOsgiService(JcrAccountCreationNotificationConfig.class, null);
         if (config == null) {

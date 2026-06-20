@@ -3,7 +3,6 @@ import {JcrAccountCreationNotificationAdmin} from './JcrAccountCreationNotificat
 import React from 'react';
 
 export default () => {
-    console.debug('%c jcr-account-creation-notification: activation in progress', 'color: #006633');
     registry.add('adminRoute', 'jcrAccountCreationNotification', {
         targets: ['administration-server-configuration:21'],
         requiredPermission: 'jcrAccountCreationNotificationAdmin',

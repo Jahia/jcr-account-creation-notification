@@ -11,6 +11,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,15 +25,28 @@ import java.net.UnknownHostException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.regex.Pattern;
 
-@Component(immediate = true, service = JcrAccountCreationListener.class)
+/**
+ * OSGi component that registers a JCR {@link EventListener} on {@code /users} and sends an
+ * email notification whenever a {@code jnt:user} node is added.
+ *
+ * <p>The component is {@code immediate=true} and publishes no service ({@code service={}});
+ * it self-registers as a JCR observation listener in {@link #activate()}.
+ *
+ * <p>Fields read on JCR event threads ({@code observationSession}, {@code config},
+ * {@code mailService}) are declared {@code volatile} so that writes performed during OSGi
+ * bind/activate are visible to the event thread without a data race.  The {@link Reference}
+ * policy is {@code STATIC} (the default) which guarantees the component is stopped and
+ * restarted whenever a dependency changes, keeping the volatile approach simple and correct.
+ */
+// S3077: volatile references to thread-safe/immutable objects — safe-publication idiom; do not remove volatile
+@SuppressWarnings("java:S3077")
+@Component(immediate = true, service = {})
 public final class JcrAccountCreationListener implements EventListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JcrAccountCreationListener.class);
     private static final String USERS_PATH = "/users";
     private static final String JNT_USER = "jnt:user";
-    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     private static final String CRLF_PATTERN = "[\\r\\n]";
     private static final String HEADER_REPLACEMENT = " ";
     private static final String LOG_CONTROL_PATTERN = "[\\r\\n\\t]";
@@ -41,18 +55,28 @@ public final class JcrAccountCreationListener implements EventListener {
             .ofPattern("yyyy/MM/dd 'at' HH:mm:ss z")
             .withZone(ZoneId.systemDefault());
 
-    private Session observationSession;
-    private MailService mailService;
-    private JcrAccountCreationNotificationConfig config;
+    // volatile: written by OSGi activate/bind thread, read by JCR observation thread
+    private volatile Session observationSession;
+    private volatile MailService mailService;
+    private volatile JcrAccountCreationNotificationConfig config;
 
-    @Reference
+    @Reference(policy = ReferencePolicy.STATIC)
     public void setMailService(MailService mailService) {
         this.mailService = mailService;
     }
 
-    @Reference
+    @Reference(policy = ReferencePolicy.STATIC)
     public void setConfig(JcrAccountCreationNotificationConfig config) {
         this.config = config;
+    }
+
+    /**
+     * Test seam (package-private): supplies an observation session without a full JCR login.
+     * Production sets this in {@link #activate()}; behaviour tests use it to exercise
+     * {@link #onEvent(EventIterator)} past the not-registered guard.
+     */
+    void setObservationSession(Session observationSession) {
+        this.observationSession = observationSession;
     }
 
     @Activate
@@ -99,22 +123,33 @@ public final class JcrAccountCreationListener implements EventListener {
             try {
                 handleUserCreation(event);
             } catch (RepositoryException e) {
+                // A RepositoryException (e.g. dead session) will repeat for every remaining
+                // event in this batch and cannot be recovered within a single onEvent call.
+                // Log once at WARN and stop processing the rest of the batch.
+                LOGGER.warn("Stopping event-batch processing: repository error on event (session may be dead)", e);
+                break;
+            } catch (Exception e) {
+                // Catch all other exceptions — an uncaught RuntimeException escaping to the
+                // JCR observation manager can cause the listener to be silently deregistered,
+                // which would stop all future notifications without any obvious indication.
                 LOGGER.error("Error processing JCR user creation event", e);
             }
         }
     }
 
-    private void handleUserCreation(Event event) throws RepositoryException {
+    void handleUserCreation(Event event) throws RepositoryException {
         final String path = event.getPath();
         final String username = StringUtils.substringAfterLast(path, "/");
         final String creator = StringUtils.defaultString(event.getUserID(), "system");
         final String creationTime = DATE_FORMATTER.format(Instant.ofEpochMilli(event.getDate()));
         final String serverName = resolveServerName();
 
-        final String sender = sanitizeHeader(StringUtils.defaultIfEmpty(config.getSender(), mailService.defaultSender()));
-        final String recipient = sanitizeHeader(StringUtils.defaultIfEmpty(config.getRecipient(), mailService.defaultRecipient()));
-        final String subject = sanitizeHeader(StringUtils.defaultString(config.getSubject()).replace("{server}", serverName));
-        final String body = StringUtils.defaultString(config.getBody())
+        // Single volatile read of snapshot — all four fields come from the same consistent config version.
+        final JcrAccountCreationNotificationConfig.Snapshot snap = this.config.getSnapshot();
+        final String sender = sanitizeHeader(StringUtils.defaultIfEmpty(snap.sender, mailService.defaultSender()));
+        final String recipient = sanitizeHeader(StringUtils.defaultIfEmpty(snap.recipient, mailService.defaultRecipient()));
+        final String subject = sanitizeHeader(StringUtils.defaultString(snap.subject).replace("{server}", serverName));
+        final String body = StringUtils.defaultString(snap.body)
                 .replace("{username}", escapeHtml(username))
                 .replace("{creator}", escapeHtml(creator))
                 .replace("{time}", escapeHtml(creationTime));
@@ -135,8 +170,15 @@ public final class JcrAccountCreationListener implements EventListener {
         }
     }
 
+    /**
+     * Validates that the given string is a non-empty, syntactically plausible email address.
+     * Uses {@link JcrAccountCreationNotificationConfig#EMAIL_PATTERN} — the canonical pattern
+     * shared with the mutation extension (which uses the same regex with optional semantics).
+     * Here the check is required: a missing recipient skips the notification entirely.
+     */
     static boolean isValidEmail(String email) {
-        return email != null && !email.isEmpty() && EMAIL_PATTERN.matcher(email).matches();
+        return email != null && !email.isEmpty()
+                && JcrAccountCreationNotificationConfig.EMAIL_PATTERN.matcher(email).matches();
     }
 
     static String sanitizeForLog(String value) {

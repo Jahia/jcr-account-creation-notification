@@ -112,40 +112,37 @@ describe('JCR Account Creation Notification', () => {
     // ─── Admin UI ────────────────────────────────────────────────────────────────
 
     describe('Admin UI', () => {
-        it('shows the admin panel title', () => {
+        // Cypress clears cookies between tests, so the session-level `before(cy.login)`
+        // does not persist here — re-authenticate before each test that visits the UI.
+        beforeEach(() => {
             cy.login();
             cy.visit(adminPath);
+        });
+
+        it('shows the admin panel title', () => {
             cy.contains('JCR Account Creation Notification Settings').should('be.visible');
         });
 
         it('shows recipient and sender input fields', () => {
-            cy.login();
-            cy.visit(adminPath);
             cy.get('#jacn-recipient').should('be.visible');
             cy.get('#jacn-sender').should('be.visible');
         });
 
         it('shows subject input field', () => {
-            cy.login();
-            cy.visit(adminPath);
             cy.get('#jacn-subject').should('be.visible');
         });
 
         it('shows the CKEditor for the body field', () => {
-            cy.login();
-            cy.visit(adminPath);
-            cy.get('.ck-editor').should('be.visible');
+            // Role/aria-based selector: the editable region is wired to the body
+            // label via aria-labelledby in onReady — more robust than the .ck-editor class.
+            cy.get('[aria-labelledby="jacn-body-label"]').should('be.visible');
         });
 
         it('shows the save button', () => {
-            cy.login();
-            cy.visit(adminPath);
             cy.contains('button', 'Save settings').should('be.visible');
         });
 
         it('shows success alert after saving', () => {
-            cy.login();
-            cy.visit(adminPath);
             cy.get('#jacn-subject').clear();
             cy.get('#jacn-subject').type('[{{}server}] UI test');
             cy.contains('button', 'Save settings').click();
@@ -153,8 +150,6 @@ describe('JCR Account Creation Notification', () => {
         });
 
         it('shows a validation error for an invalid recipient email', () => {
-            cy.login();
-            cy.visit(adminPath);
             cy.get('#jacn-recipient').clear();
             cy.get('#jacn-recipient').type('not-an-email');
             cy.get('#jacn-recipient').blur();
@@ -163,8 +158,6 @@ describe('JCR Account Creation Notification', () => {
         });
 
         it('clears the validation error once the email is corrected', () => {
-            cy.login();
-            cy.visit(adminPath);
             cy.get('#jacn-recipient').clear();
             cy.get('#jacn-recipient').type('valid@example.com');
             cy.get('[class*="jacn_errorMsg"]').should('not.exist');

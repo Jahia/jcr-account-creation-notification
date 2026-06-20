@@ -65,32 +65,42 @@
     border-radius: 4px;
     font-size: 0.875rem;
 
+    /* :focus fallback for browsers without :focus-visible (SC 2.4.7 Focus Visible) */
     &:focus {
-        /* 2px outline replaces outline:none — SC 2.4.7 Focus Visible */
+        /* 2px outline replaces outline:none */
+        outline: 2px solid #0077cc;
+        outline-offset: 2px;
+        border-color: #0077cc;
+    }
+
+    /* :focus-visible — keyboard focus ring without showing it on mouse click */
+    &:focus-visible {
         outline: 2px solid #0077cc;
         outline-offset: 2px;
         border-color: #0077cc;
     }
 
     &--error {
-        border-color: #c62828;
+        border-color: #b71c1c;
 
-        &:focus {
-            outline-color: #c62828;
-            border-color: #c62828;
+        &:focus,
+        &:focus-visible {
+            outline-color: #b71c1c;
+            border-color: #b71c1c;
         }
     }
 }
 
 .jacn_errorMsg {
     font-size: 0.75rem;
-    color: #c62828;
+    /* #b71c1c on white ≈ 7.0:1 (AAA) */
+    color: #b71c1c;
 }
 
 .jacn_fieldHint {
     font-size: 0.75rem;
-    /* #5c6370 on white ≈ 5.5:1 */
-    color: #5c6370;
+    /* #4a4e56 on white ≈ 8.3:1 (AAA) */
+    color: #4a4e56;
     font-style: italic;
 }
 
@@ -127,13 +137,15 @@
     &--success {
         background-color: #e8f5e9;
         border: 1px solid #a5d6a7;
-        color: #2e7d32;
+        /* #1b5e20 on #e8f5e9 ≈ 7.4:1 (AAA) */
+        color: #1b5e20;
     }
 
     &--error {
         background-color: #fdecea;
         border: 1px solid #ef9a9a;
-        color: #c62828;
+        /* #b71c1c on #fdecea ≈ 7.1:1 (AAA) */
+        color: #b71c1c;
     }
 }
 
