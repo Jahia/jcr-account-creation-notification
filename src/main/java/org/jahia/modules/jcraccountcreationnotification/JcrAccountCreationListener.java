@@ -39,6 +39,8 @@ import java.time.format.DateTimeFormatter;
  * policy is {@code STATIC} (the default) which guarantees the component is stopped and
  * restarted whenever a dependency changes, keeping the volatile approach simple and correct.
  */
+// S3077: volatile references to thread-safe/immutable objects — safe-publication idiom; do not remove volatile
+@SuppressWarnings("java:S3077")
 @Component(immediate = true, service = {})
 public final class JcrAccountCreationListener implements EventListener {
 

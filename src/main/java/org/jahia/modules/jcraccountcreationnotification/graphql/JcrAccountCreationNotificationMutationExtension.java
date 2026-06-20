@@ -75,27 +75,11 @@ public class JcrAccountCreationNotificationMutationExtension {
                 props = new Hashtable<>();
             }
             // recipient and sender: remove key when empty so MailService default is used.
-            if (recipient != null && !recipient.isEmpty()) {
-                props.put("recipient", recipient);
-            } else {
-                props.remove("recipient");
-            }
-            if (sender != null && !sender.isEmpty()) {
-                props.put("sender", sender);
-            } else {
-                props.remove("sender");
-            }
+            putOrRemove(props, "recipient", recipient);
+            putOrRemove(props, "sender", sender);
             // subject and body: remove key when empty so the component default is restored.
-            if (subject != null && !subject.isEmpty()) {
-                props.put("subject", subject);
-            } else {
-                props.remove("subject");
-            }
-            if (body != null && !body.isEmpty()) {
-                props.put("body", body);
-            } else {
-                props.remove("body");
-            }
+            putOrRemove(props, "subject", subject);
+            putOrRemove(props, "body", body);
             config.update(props);
             return Boolean.TRUE;
         } catch (IOException e) {
@@ -103,4 +87,16 @@ public class JcrAccountCreationNotificationMutationExtension {
             return Boolean.FALSE;
         }
     }
+    /**
+     * Puts {@code key} into {@code props} when {@code value} is non-empty;
+     * removes it otherwise, so the OSGi CM consumer sees the absence as "use default".
+     */
+    private static void putOrRemove(Dictionary<String, Object> props, String key, String value) {
+        if (value != null && !value.isEmpty()) {
+            props.put(key, value);
+        } else {
+            props.remove(key);
+        }
+    }
+
 }

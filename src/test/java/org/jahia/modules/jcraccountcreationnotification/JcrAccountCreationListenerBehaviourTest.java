@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
  * JUnit 4 + MockitoJUnitRunner are used: the jahia-modules parent pins the surefire-junit4
  * provider (JUnit 5 tests would silently report "Tests run: 0").
  */
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(MockitoJUnitRunner.Silent.class)
 public class JcrAccountCreationListenerBehaviourTest {
 
     @Mock
@@ -96,14 +96,15 @@ public class JcrAccountCreationListenerBehaviourTest {
                 bodyCaptor.capture());
 
         final String sentBody = bodyCaptor.getValue();
-        // username must be HTML-escaped
-        assertThat(sentBody).contains("&lt;jdoe&gt;");
-        // creator must be HTML-escaped
-        assertThat(sentBody).contains("admin&amp;operator");
-        // {time} token must be replaced (not literally present)
-        assertThat(sentBody).doesNotContain("{time}");
-        assertThat(sentBody).doesNotContain("{username}");
-        assertThat(sentBody).doesNotContain("{creator}");
+        assertThat(sentBody)
+                // username must be HTML-escaped
+                .contains("&lt;jdoe&gt;")
+                // creator must be HTML-escaped
+                .contains("admin&amp;operator")
+                // {time} token must be replaced (not literally present)
+                .doesNotContain("{time}")
+                .doesNotContain("{username}")
+                .doesNotContain("{creator}");
     }
 
     @Test
@@ -167,7 +168,7 @@ public class JcrAccountCreationListenerBehaviourTest {
     // -----------------------------------------------------------------------
 
     @Test
-    public void onEvent_mailDisabled_doesNotSendAnyMail() throws Exception {
+    public void onEvent_mailDisabled_doesNotSendAnyMail() {
         // Arrange
         when(mailService.isEnabled()).thenReturn(false);
         final EventIterator events = mock(EventIterator.class);
@@ -186,7 +187,7 @@ public class JcrAccountCreationListenerBehaviourTest {
     // -----------------------------------------------------------------------
 
     @Test
-    public void onEvent_runtimeExceptionInHandleUserCreation_doesNotPropagateToObservationManager() throws Exception {
+    public void onEvent_runtimeExceptionInHandleUserCreation_doesNotPropagateToObservationManager() {
         // Arrange — config.getBody() throws to simulate an unexpected RuntimeException
         when(config.getBody()).thenThrow(new RuntimeException("simulated failure"));
         final EventIterator events = mock(EventIterator.class);

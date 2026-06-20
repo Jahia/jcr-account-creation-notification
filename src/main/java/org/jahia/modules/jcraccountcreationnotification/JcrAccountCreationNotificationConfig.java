@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
  * the observation thread always sees either the old snapshot or the new one, never a mix of
  * fields from both.
  */
+// S3077: volatile reference to an immutable Snapshot — single-write safe-publication; do not remove volatile
+@SuppressWarnings("java:S3077")
 @Component(
         immediate = true,
         service = {JcrAccountCreationNotificationConfig.class, ManagedService.class},
