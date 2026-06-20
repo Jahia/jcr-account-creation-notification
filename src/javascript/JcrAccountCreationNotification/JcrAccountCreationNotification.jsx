@@ -127,7 +127,10 @@ export const JcrAccountCreationNotificationAdmin = () => {
 
     // Memoised so a new config object is NOT created per keystroke (which would
     // tear down and re-init the editor); rebuilt only when the UI locale changes.
-    const editorConfig = useMemo(() => buildEditorConfig(i18n.language, t('label.bodyToolbarLabel')), [i18n.language, t]);
+    // `toolbarLabel` is hoisted so the dep array stays stable — `t` is referentially
+    // unstable in react-i18next and would force an unnecessary editor remount.
+    const toolbarLabel = t('label.bodyToolbarLabel');
+    const editorConfig = useMemo(() => buildEditorConfig(i18n.language, toolbarLabel), [i18n.language, toolbarLabel]);
 
     const {loading, error, data} = useQuery(GET_SETTINGS, {
         fetchPolicy: 'network-only'
@@ -136,6 +139,11 @@ export const JcrAccountCreationNotificationAdmin = () => {
     // Hydrate the form exactly once from the first successful response. Watching
     // `data` (rather than onCompleted) plus the `initialised` ref means later
     // background cache refetches never overwrite in-flight user edits.
+    //
+    // CONTRACT: the query uses fetchPolicy:'network-only' so a fresh fetch runs on
+    // remount; that is sufficient. Do NOT add refetchQueries to the save mutation
+    // without also resetting initialisedRef.current = false, or the form will silently
+    // go stale after a save.
     useEffect(() => {
         if (initialisedRef.current) {
             return;
@@ -214,8 +222,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
                 }
             });
             setSaveStatus(result.data?.jcrAccountCreationNotificationSaveSettings ? 'success' : 'error');
-        } catch (err) {
-            console.error('Failed to save settings:', err);
+        } catch {
             setSaveStatus('error');
         } finally {
             submittingRef.current = false;
@@ -240,7 +247,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
                     <h2>{t('label.title')}</h2>
                 </div>
                 <div role="alert" className={`${styles.jacn_alert} ${styles['jacn_alert--error']}`}>
-                    <span className={styles.jacn_alertIcon}>✕</span> {t('label.loadError')}
+                    <span className={styles.jacn_alertIcon} aria-hidden="true">✕</span> {t('label.loadError')}
                 </div>
             </div>
         );
@@ -374,12 +381,12 @@ export const JcrAccountCreationNotificationAdmin = () => {
             <div className={styles.jacn_actions}>
                 {saveStatus === 'success' && (
                     <div aria-hidden="true" className={`${styles.jacn_alert} ${styles['jacn_alert--success']}`}>
-                        <span className={styles.jacn_alertIcon}>✓</span> {t('label.saveSuccess')}
+                        <span className={styles.jacn_alertIcon} aria-hidden="true">✓</span> {t('label.saveSuccess')}
                     </div>
                 )}
                 {saveStatus === 'error' && (
                     <div aria-hidden="true" className={`${styles.jacn_alert} ${styles['jacn_alert--error']}`}>
-                        <span className={styles.jacn_alertIcon}>✕</span> {t('label.saveError')}
+                        <span className={styles.jacn_alertIcon} aria-hidden="true">✕</span> {t('label.saveError')}
                     </div>
                 )}
                 <Button

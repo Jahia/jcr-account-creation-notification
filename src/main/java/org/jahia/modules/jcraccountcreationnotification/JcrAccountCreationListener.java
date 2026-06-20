@@ -113,9 +113,15 @@ public final class JcrAccountCreationListener implements EventListener {
             final Event event = events.nextEvent();
             try {
                 handleUserCreation(event);
+            } catch (RepositoryException e) {
+                // A RepositoryException (e.g. dead session) will repeat for every remaining
+                // event in this batch and cannot be recovered within a single onEvent call.
+                // Log once at WARN and stop processing the rest of the batch.
+                LOGGER.warn("Stopping event-batch processing: repository error on event (session may be dead)", e);
+                break;
             } catch (Exception e) {
-                // Catch all exceptions — an uncaught RuntimeException escaping to the JCR
-                // observation manager can cause the listener to be silently deregistered,
+                // Catch all other exceptions — an uncaught RuntimeException escaping to the
+                // JCR observation manager can cause the listener to be silently deregistered,
                 // which would stop all future notifications without any obvious indication.
                 LOGGER.error("Error processing JCR user creation event", e);
             }
@@ -129,12 +135,12 @@ public final class JcrAccountCreationListener implements EventListener {
         final String creationTime = DATE_FORMATTER.format(Instant.ofEpochMilli(event.getDate()));
         final String serverName = resolveServerName();
 
-        // Read the snapshot once so all four fields come from the same consistent config version.
-        final JcrAccountCreationNotificationConfig cfg = this.config;
-        final String sender = sanitizeHeader(StringUtils.defaultIfEmpty(cfg.getSender(), mailService.defaultSender()));
-        final String recipient = sanitizeHeader(StringUtils.defaultIfEmpty(cfg.getRecipient(), mailService.defaultRecipient()));
-        final String subject = sanitizeHeader(StringUtils.defaultString(cfg.getSubject()).replace("{server}", serverName));
-        final String body = StringUtils.defaultString(cfg.getBody())
+        // Single volatile read of snapshot — all four fields come from the same consistent config version.
+        final JcrAccountCreationNotificationConfig.Snapshot snap = this.config.getSnapshot();
+        final String sender = sanitizeHeader(StringUtils.defaultIfEmpty(snap.sender, mailService.defaultSender()));
+        final String recipient = sanitizeHeader(StringUtils.defaultIfEmpty(snap.recipient, mailService.defaultRecipient()));
+        final String subject = sanitizeHeader(StringUtils.defaultString(snap.subject).replace("{server}", serverName));
+        final String body = StringUtils.defaultString(snap.body)
                 .replace("{username}", escapeHtml(username))
                 .replace("{creator}", escapeHtml(creator))
                 .replace("{time}", escapeHtml(creationTime));

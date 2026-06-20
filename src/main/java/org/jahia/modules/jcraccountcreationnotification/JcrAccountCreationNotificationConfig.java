@@ -100,6 +100,15 @@ public class JcrAccountCreationNotificationConfig implements ManagedService {
         return snapshot.subject;
     }
 
+    /**
+     * Returns the current configuration snapshot as a single volatile read.
+     * Callers that need more than one field should use this to avoid reading
+     * {@code snapshot} multiple times across separate getter calls.
+     */
+    Snapshot getSnapshot() {
+        return snapshot;
+    }
+
     public String getBody() {
         return snapshot.body;
     }

@@ -53,8 +53,8 @@ public class JcrAccountCreationNotificationMutationExtension {
     public static Boolean saveSettings(
             @GraphQLName("recipient") @GraphQLDescription("Custom recipient email (optional, leave empty to use MailService default)") String recipient,
             @GraphQLName("sender") @GraphQLDescription("Custom sender email (optional, leave empty to use MailService default)") String sender,
-            @GraphQLName("subject") @GraphQLDescription("Subject template — token: {server}") String subject,
-            @GraphQLName("body") @GraphQLDescription("Body template — tokens: {username}, {creator}, {time}") String body) {
+            @GraphQLName("subject") @GraphQLDescription("Subject template — token: {server}. Send empty to remove the override and restore the module default subject.") String subject,
+            @GraphQLName("body") @GraphQLDescription("Body template — tokens: {username}, {creator}, {time}. Send empty to remove the override and restore the module default body.") String body) {
         if (!isValidEmail(recipient)) {
             throw new IllegalArgumentException("Invalid recipient email address");
         }

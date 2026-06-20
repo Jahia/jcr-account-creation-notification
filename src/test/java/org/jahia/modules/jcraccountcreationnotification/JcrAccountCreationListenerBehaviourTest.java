@@ -56,7 +56,14 @@ public class JcrAccountCreationListenerBehaviourTest {
         when(mailService.defaultSender()).thenReturn("default-sender@example.com");
         when(mailService.defaultRecipient()).thenReturn("default-recipient@example.com");
 
-        // Default config stubs
+        // Default config stubs — getSnapshot() is called by handleUserCreation for a single volatile read.
+        // Individual getters are kept for the per-test overrides that re-stub getSnapshot() inline.
+        when(config.getSnapshot()).thenReturn(new JcrAccountCreationNotificationConfig.Snapshot(
+                "admin@example.com",
+                "noreply@example.com",
+                "[myserver] JCR account creation notification",
+                "<p>Username: {username}, Creator: {creator}, Time: {time}</p>"));
+        // Keep individual getter stubs so legacy helper-method tests remain green.
         when(config.getRecipient()).thenReturn("admin@example.com");
         when(config.getSender()).thenReturn("noreply@example.com");
         when(config.getSubject()).thenReturn("[myserver] JCR account creation notification");
@@ -77,10 +84,11 @@ public class JcrAccountCreationListenerBehaviourTest {
         // Arrange — username and creator contain HTML-special chars to verify escaping
         when(event.getPath()).thenReturn("/users/<jdoe>");
         when(event.getUserID()).thenReturn("admin&operator");
-        when(config.getBody()).thenReturn("<p>{username} created by {creator} at {time}</p>");
-        when(config.getRecipient()).thenReturn("admin@example.com");
-        when(config.getSender()).thenReturn("noreply@example.com");
-        when(config.getSubject()).thenReturn("New user");
+        when(config.getSnapshot()).thenReturn(new JcrAccountCreationNotificationConfig.Snapshot(
+                "admin@example.com",
+                "noreply@example.com",
+                "New user",
+                "<p>{username} created by {creator} at {time}</p>"));
 
         // Act
         listener.handleUserCreation(event);
@@ -122,8 +130,12 @@ public class JcrAccountCreationListenerBehaviourTest {
 
     @Test
     public void handleUserCreation_noConfiguredSender_fallsBackToMailServiceDefault() throws Exception {
-        // Arrange — sender not configured
-        when(config.getSender()).thenReturn(null);
+        // Arrange — sender not configured: rebuild snapshot with null sender
+        when(config.getSnapshot()).thenReturn(new JcrAccountCreationNotificationConfig.Snapshot(
+                "admin@example.com",
+                null,
+                "[myserver] JCR account creation notification",
+                "<p>Username: {username}, Creator: {creator}, Time: {time}</p>"));
 
         // Act
         listener.handleUserCreation(event);
@@ -140,8 +152,12 @@ public class JcrAccountCreationListenerBehaviourTest {
 
     @Test
     public void handleUserCreation_invalidRecipient_skipsNotification() throws Exception {
-        // Arrange
-        when(config.getRecipient()).thenReturn("not-an-email");
+        // Arrange — invalid recipient in snapshot
+        when(config.getSnapshot()).thenReturn(new JcrAccountCreationNotificationConfig.Snapshot(
+                "not-an-email",
+                "noreply@example.com",
+                "[myserver] JCR account creation notification",
+                "<p>Username: {username}, Creator: {creator}, Time: {time}</p>"));
 
         // Act
         listener.handleUserCreation(event);
@@ -153,7 +169,11 @@ public class JcrAccountCreationListenerBehaviourTest {
     @Test
     public void handleUserCreation_nullRecipient_noConfiguredDefault_skipsNotification() throws Exception {
         // Arrange — both config and MailService return null/empty
-        when(config.getRecipient()).thenReturn(null);
+        when(config.getSnapshot()).thenReturn(new JcrAccountCreationNotificationConfig.Snapshot(
+                null,
+                "noreply@example.com",
+                "[myserver] JCR account creation notification",
+                "<p>Username: {username}, Creator: {creator}, Time: {time}</p>"));
         when(mailService.defaultRecipient()).thenReturn(null);
 
         // Act
@@ -188,8 +208,8 @@ public class JcrAccountCreationListenerBehaviourTest {
 
     @Test
     public void onEvent_runtimeExceptionInHandleUserCreation_doesNotPropagateToObservationManager() {
-        // Arrange — config.getBody() throws to simulate an unexpected RuntimeException
-        when(config.getBody()).thenThrow(new RuntimeException("simulated failure"));
+        // Arrange — config.getSnapshot() throws to simulate an unexpected RuntimeException
+        when(config.getSnapshot()).thenThrow(new RuntimeException("simulated failure"));
         final EventIterator events = mock(EventIterator.class);
         when(events.hasNext()).thenReturn(true, false);
         when(events.nextEvent()).thenReturn(event);
@@ -198,6 +218,27 @@ public class JcrAccountCreationListenerBehaviourTest {
         listener.onEvent(events);
 
         // Assert — no mail sent (exception was swallowed with log-and-continue)
+        verify(mailService, never()).sendMessage(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    // -----------------------------------------------------------------------
+    // Non-activated listener (observationSession == null) — must return early
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void onEvent_nullObservationSession_returnsEarlyWithoutConsumingEvents() {
+        // Arrange — listener constructed but never activated, so observationSession is null
+        final JcrAccountCreationListener uninitialised = new JcrAccountCreationListener();
+        uninitialised.setMailService(mailService);
+        uninitialised.setConfig(config);
+        final EventIterator events = mock(EventIterator.class);
+        when(events.hasNext()).thenReturn(true);
+
+        // Act
+        uninitialised.onEvent(events);
+
+        // Assert — no event consumed and no mail sent
+        verify(events, never()).nextEvent();
         verify(mailService, never()).sendMessage(any(), any(), any(), any(), any(), any(), any());
     }
 }
