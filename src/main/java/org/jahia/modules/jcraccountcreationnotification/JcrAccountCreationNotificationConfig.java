@@ -6,13 +6,35 @@ import org.osgi.service.cm.ManagedService;
 import org.osgi.service.component.annotations.Component;
 
 import java.util.Dictionary;
+import java.util.regex.Pattern;
 
+/**
+ * Holds OSGi ConfigurationAdmin settings for the JCR account-creation notification module.
+ *
+ * <p>Thread-safety: {@link #updated(Dictionary)} may be called on the OSGi CM thread while
+ * {@link JcrAccountCreationListener#onEvent} reads the configuration on a JCR observation thread.
+ * A single {@code volatile} reference to an immutable {@link Snapshot} eliminates torn reads:
+ * the observation thread always sees either the old snapshot or the new one, never a mix of
+ * fields from both.
+ */
 @Component(
         immediate = true,
         service = {JcrAccountCreationNotificationConfig.class, ManagedService.class},
-        property = Constants.SERVICE_PID + "=org.jahia.modules.jcraccountcreationnotification"
+        property = Constants.SERVICE_PID + "=" + JcrAccountCreationNotificationConfig.PID
 )
 public class JcrAccountCreationNotificationConfig implements ManagedService {
+
+    /** OSGi configuration PID — single source of truth used by this class and the mutation extension. */
+    public static final String PID = "org.jahia.modules.jcraccountcreationnotification";
+
+    /**
+     * Shared email-validation pattern.
+     * <ul>
+     *   <li>Listener ({@link JcrAccountCreationListener}): required — empty/null skips notification.</li>
+     *   <li>Mutation extension: optional — empty/null clears the override and falls back to MailService default.</li>
+     * </ul>
+     */
+    public static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
 
     public static final String DEFAULT_SUBJECT = "[{server}] JCR account creation notification";
 
@@ -24,37 +46,59 @@ public class JcrAccountCreationNotificationConfig implements ManagedService {
             + " and to help you to protect them.</p>"
             + "<p>Regards,</p>";
 
-    private volatile String recipient = null;
-    private volatile String sender = null;
-    private volatile String subject = DEFAULT_SUBJECT;
-    private volatile String body = DEFAULT_BODY;
+    /** Default snapshot used at startup and when the configuration is deleted (dictionary == null). */
+    private static final Snapshot DEFAULT_SNAPSHOT = new Snapshot(null, null, DEFAULT_SUBJECT, DEFAULT_BODY);
+
+    /**
+     * Immutable value snapshot of the four config fields.
+     * Replacing this single reference is one volatile write; readers take one volatile read
+     * and then access plain final fields — no torn state is possible.
+     */
+    static final class Snapshot {
+        final String recipient;
+        final String sender;
+        final String subject;
+        final String body;
+
+        Snapshot(String recipient, String sender, String subject, String body) {
+            this.recipient = recipient;
+            this.sender = sender;
+            this.subject = subject;
+            this.body = body;
+        }
+    }
+
+    private volatile Snapshot snapshot = DEFAULT_SNAPSHOT;
 
     @Override
     public void updated(Dictionary<String, ?> dictionary) throws ConfigurationException {
         if (dictionary == null) {
+            // Configuration deleted — reset to defaults so stale values are never served.
+            snapshot = DEFAULT_SNAPSHOT;
             return;
         }
-        recipient = (String) dictionary.get("recipient");
-        sender = (String) dictionary.get("sender");
+        final String recipient = (String) dictionary.get("recipient");
+        final String sender = (String) dictionary.get("sender");
         final String configSubject = (String) dictionary.get("subject");
-        subject = (configSubject != null && !configSubject.isEmpty()) ? configSubject : DEFAULT_SUBJECT;
+        final String subject = (configSubject != null && !configSubject.isEmpty()) ? configSubject : DEFAULT_SUBJECT;
         final String configBody = (String) dictionary.get("body");
-        body = (configBody != null && !configBody.isEmpty()) ? configBody : DEFAULT_BODY;
+        final String body = (configBody != null && !configBody.isEmpty()) ? configBody : DEFAULT_BODY;
+        snapshot = new Snapshot(recipient, sender, subject, body);
     }
 
     public String getRecipient() {
-        return recipient;
+        return snapshot.recipient;
     }
 
     public String getSender() {
-        return sender;
+        return snapshot.sender;
     }
 
     public String getSubject() {
-        return subject;
+        return snapshot.subject;
     }
 
     public String getBody() {
-        return body;
+        return snapshot.body;
     }
 }
