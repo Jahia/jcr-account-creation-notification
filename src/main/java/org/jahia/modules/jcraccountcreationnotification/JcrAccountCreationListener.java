@@ -70,6 +70,15 @@ public final class JcrAccountCreationListener implements EventListener {
         this.config = config;
     }
 
+    /**
+     * Test seam (package-private): supplies an observation session without a full JCR login.
+     * Production sets this in {@link #activate()}; behaviour tests use it to exercise
+     * {@link #onEvent(EventIterator)} past the not-registered guard.
+     */
+    void setObservationSession(Session observationSession) {
+        this.observationSession = observationSession;
+    }
+
     @Activate
     public void activate() {
         try {

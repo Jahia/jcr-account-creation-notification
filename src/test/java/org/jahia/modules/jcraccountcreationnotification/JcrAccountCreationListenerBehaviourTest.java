@@ -8,6 +8,8 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.jahia.services.mail.MailService;
 
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
 import javax.jcr.observation.Event;
 import javax.jcr.observation.EventIterator;
 
@@ -50,6 +52,8 @@ public class JcrAccountCreationListenerBehaviourTest {
         listener = new JcrAccountCreationListener();
         listener.setMailService(mailService);
         listener.setConfig(config);
+        // Inject a session so onEvent() proceeds past the not-registered guard and exercises the loop.
+        listener.setObservationSession(mock(Session.class));
 
         // Default stub: mail is enabled
         when(mailService.isEnabled()).thenReturn(true);
@@ -63,11 +67,6 @@ public class JcrAccountCreationListenerBehaviourTest {
                 "noreply@example.com",
                 "[myserver] JCR account creation notification",
                 "<p>Username: {username}, Creator: {creator}, Time: {time}</p>"));
-        // Keep individual getter stubs so legacy helper-method tests remain green.
-        when(config.getRecipient()).thenReturn("admin@example.com");
-        when(config.getSender()).thenReturn("noreply@example.com");
-        when(config.getSubject()).thenReturn("[myserver] JCR account creation notification");
-        when(config.getBody()).thenReturn("<p>Username: {username}, Creator: {creator}, Time: {time}</p>");
 
         // Default event stubs
         when(event.getPath()).thenReturn("/users/jdoe");
@@ -239,6 +238,27 @@ public class JcrAccountCreationListenerBehaviourTest {
 
         // Assert — no event consumed and no mail sent
         verify(events, never()).nextEvent();
+        verify(mailService, never()).sendMessage(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    // -----------------------------------------------------------------------
+    // RepositoryException (dead session) — stops the whole batch, does not flood
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void onEvent_repositoryException_breaksBatchWithoutConsumingRemainingEvents() throws Exception {
+        // Arrange — reading the first event fails with a RepositoryException (simulated dead session).
+        // The iterator would otherwise yield two events; we assert the second is never consumed.
+        when(event.getPath()).thenThrow(new RepositoryException("simulated dead session"));
+        final EventIterator events = mock(EventIterator.class);
+        when(events.hasNext()).thenReturn(true, true, false);
+        when(events.nextEvent()).thenReturn(event);
+
+        // Act — must NOT throw; the exception is swallowed at WARN
+        listener.onEvent(events);
+
+        // Assert — only the first event was pulled before the loop broke; no mail sent
+        verify(events, times(1)).nextEvent();
         verify(mailService, never()).sendMessage(any(), any(), any(), any(), any(), any(), any());
     }
 }
