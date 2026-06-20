@@ -183,7 +183,7 @@ public class JcrAccountCreationListenerBehaviourTest {
     }
 
     // -----------------------------------------------------------------------
-    // onEvent broad exception catch (H-4) — RuntimeException must not escape
+    // Broad exception catch: an unexpected failure during handling must not escape the listener.
     // -----------------------------------------------------------------------
 
     @Test

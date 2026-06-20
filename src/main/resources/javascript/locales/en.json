@@ -12,9 +12,11 @@
     "subjectHint": "Available token: {server}",
     "body": "Body",
     "bodyHint": "Available tokens: {username}, {creator}, {time}",
+    "bodyToolbarLabel": "Email body formatting",
     "save": "Save settings",
     "saveSuccess": "Settings saved successfully.",
     "saveError": "An error occurred while saving the settings.",
-    "invalidEmail": "Please enter a valid email address"
+    "loadError": "An error occurred while loading the settings.",
+    "invalidEmail": "Please enter a valid email address."
   }
 }

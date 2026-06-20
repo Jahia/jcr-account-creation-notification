@@ -1,0 +1,22 @@
+{
+  "label": {
+    "menu_entry": "Notification de création de compte JCR",
+    "title": "Paramètres de notification de création de compte JCR",
+    "description": "Configurez l'e-mail envoyé aux administrateurs lorsqu'un compte utilisateur JCR est créé.",
+    "loading": "Chargement, veuillez patienter.",
+    "recipient": "Destinataire",
+    "recipientPlaceholder": "Laisser vide pour utiliser le destinataire de messagerie par défaut de Jahia",
+    "sender": "Expéditeur",
+    "senderPlaceholder": "Laisser vide pour utiliser l'expéditeur de messagerie par défaut de Jahia",
+    "subject": "Objet",
+    "subjectHint": "Jeton disponible : {server}",
+    "body": "Corps",
+    "bodyHint": "Jetons disponibles : {username}, {creator}, {time}",
+    "bodyToolbarLabel": "Mise en forme du corps de l'e-mail",
+    "save": "Enregistrer les paramètres",
+    "saveSuccess": "Paramètres enregistrés avec succès.",
+    "saveError": "Une erreur est survenue lors de l'enregistrement des paramètres.",
+    "loadError": "Une erreur est survenue lors du chargement des paramètres.",
+    "invalidEmail": "Veuillez saisir une adresse e-mail valide."
+  }
+}
