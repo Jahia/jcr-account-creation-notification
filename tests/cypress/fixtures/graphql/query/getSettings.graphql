@@ -1,8 +1,10 @@
 query {
-    jcrAccountCreationNotificationSettings {
-        recipient
-        sender
-        subject
-        body
+    jcrAccountCreationNotification {
+        settings {
+            recipient
+            sender
+            subject
+            body
+        }
     }
 }

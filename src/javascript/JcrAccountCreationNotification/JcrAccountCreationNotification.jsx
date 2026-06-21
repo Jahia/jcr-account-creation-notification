@@ -91,8 +91,8 @@ const buildEditorConfig = (language, toolbarLabel) => ({
  *
  * Renders a form (recipient, sender, subject, and a CKEditor 5 rich-text body)
  * that reads from / writes to the module's OSGi configuration through the
- * `jcrAccountCreationNotificationSettings` GraphQL query and
- * `jcrAccountCreationNotificationSaveSettings` mutation.
+ * `jcrAccountCreationNotification.settings` GraphQL query and
+ * `jcrAccountCreationNotification.saveSettings` mutation.
  *
  * Hydration is performed once via a `useEffect` watching the query `data`
  * (guarded by an `initialised` ref) so background cache refetches never clobber
@@ -149,7 +149,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
             return;
         }
 
-        const s = data?.jcrAccountCreationNotificationSettings;
+        const s = data?.jcrAccountCreationNotification?.settings;
         if (s) {
             initialisedRef.current = true;
             setFormState({
@@ -221,7 +221,7 @@ export const JcrAccountCreationNotificationAdmin = () => {
                     body: formState.body
                 }
             });
-            setSaveStatus(result.data?.jcrAccountCreationNotificationSaveSettings ? 'success' : 'error');
+            setSaveStatus(result.data?.jcrAccountCreationNotification?.saveSettings ? 'success' : 'error');
         } catch {
             setSaveStatus('error');
         } finally {

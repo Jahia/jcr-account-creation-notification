@@ -4,11 +4,13 @@ import {useMutation, useQuery} from '@apollo/client';
 import {JcrAccountCreationNotificationAdmin} from './JcrAccountCreationNotification';
 
 const SETTINGS = {
-    jcrAccountCreationNotificationSettings: {
-        recipient: 'admin@example.com',
-        sender: 'noreply@example.com',
-        subject: '[{server}] Notice',
-        body: '<p>Hello</p>'
+    jcrAccountCreationNotification: {
+        settings: {
+            recipient: 'admin@example.com',
+            sender: 'noreply@example.com',
+            subject: '[{server}] Notice',
+            body: '<p>Hello</p>'
+        }
     }
 };
 
@@ -85,7 +87,7 @@ describe('JcrAccountCreationNotificationAdmin', () => {
     });
 
     it('calls the mutation with the form values on save', async () => {
-        const save = jest.fn().mockResolvedValue({data: {jcrAccountCreationNotificationSaveSettings: true}});
+        const save = jest.fn().mockResolvedValue({data: {jcrAccountCreationNotification: {saveSettings: true}}});
         useMutation.mockReturnValue([save, {loading: false}]);
         mockQuery({data: SETTINGS});
         render(<JcrAccountCreationNotificationAdmin/>);
@@ -113,7 +115,7 @@ describe('JcrAccountCreationNotificationAdmin', () => {
         fireEvent.click(button);
         fireEvent.click(button);
         expect(save).toHaveBeenCalledTimes(1);
-        resolve({data: {jcrAccountCreationNotificationSaveSettings: true}});
+        resolve({data: {jcrAccountCreationNotification: {saveSettings: true}}});
         await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('label.saveSuccess'));
     });
 });
