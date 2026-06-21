@@ -1,10 +1,10 @@
-package org.jahia.modules.jcraccountcreationnotification.graphql;
+package org.jahia.community.jcraccountcreationnotification.graphql;
 
 import graphql.annotations.annotationTypes.GraphQLDescription;
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import org.jahia.modules.graphql.provider.dxm.security.GraphQLRequiresPermission;
-import org.jahia.modules.jcraccountcreationnotification.JcrAccountCreationNotificationConfig;
+import org.jahia.community.jcraccountcreationnotification.JcrAccountCreationNotificationConfig;
 import org.jahia.osgi.BundleUtils;
 
 /**

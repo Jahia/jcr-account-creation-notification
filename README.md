@@ -30,7 +30,7 @@ Settings can also be managed via file or GraphQL — see the sections below.
 
 ### File-based configuration
 
-Create or edit `org.jahia.modules.jcraccountcreationnotification.cfg` in the Jahia configuration directory:
+Create or edit `org.jahia.community.jcraccountcreationnotification.cfg` in the Jahia configuration directory:
 
 ```properties
 # Optional — leave commented to use the Jahia mail service default
