@@ -130,7 +130,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-                        <_dsannotations>org.jahia.modules.jcraccountcreationnotification.*</_dsannotations>
+                        <_dsannotations>org.jahia.community.jcraccountcreationnotification.*</_dsannotations>
                     </instructions>
                 </configuration>
             </plugin>

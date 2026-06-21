@@ -1,4 +1,4 @@
-package org.jahia.modules.jcraccountcreationnotification;
+package org.jahia.community.jcraccountcreationnotification;
 
 import org.osgi.framework.Constants;
 import org.osgi.service.cm.ConfigurationException;
@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 public class JcrAccountCreationNotificationConfig implements ManagedService {
 
     /** OSGi configuration PID — single source of truth used by this class and the mutation extension. */
-    public static final String PID = "org.jahia.modules.jcraccountcreationnotification";
+    public static final String PID = "org.jahia.community.jcraccountcreationnotification";
 
     /**
      * Shared email-validation pattern.

@@ -1,4 +1,4 @@
-package org.jahia.modules.jcraccountcreationnotification;
+package org.jahia.community.jcraccountcreationnotification;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.jackrabbit.core.security.JahiaLoginModule;

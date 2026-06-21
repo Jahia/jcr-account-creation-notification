@@ -1,4 +1,4 @@
-package org.jahia.modules.jcraccountcreationnotification;
+package org.jahia.community.jcraccountcreationnotification;
 
 import org.junit.Test;
 
@@ -153,6 +153,6 @@ public class JcrAccountCreationNotificationConfigTest {
     @Test
     public void pid_constant_hasExpectedValue() {
         assertThat(JcrAccountCreationNotificationConfig.PID)
-                .isEqualTo("org.jahia.modules.jcraccountcreationnotification");
+                .isEqualTo("org.jahia.community.jcraccountcreationnotification");
     }
 }

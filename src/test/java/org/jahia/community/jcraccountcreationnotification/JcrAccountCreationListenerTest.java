@@ -1,4 +1,4 @@
-package org.jahia.modules.jcraccountcreationnotification;
+package org.jahia.community.jcraccountcreationnotification;
 
 import org.junit.Test;
 
