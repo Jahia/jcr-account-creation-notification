@@ -35,7 +35,7 @@ describe('JCR Account Creation Notification', () => {
     describe('Settings API', () => {
         it('returns all settings fields via GraphQL', () => {
             cy.apollo({query: getSettings})
-                .its('data.jcrAccountCreationNotificationSettings')
+                .its('data.jcrAccountCreationNotification.settings')
                 .should(s => {
                     expect(s).to.have.property('recipient');
                     expect(s).to.have.property('sender');
@@ -52,7 +52,7 @@ describe('JCR Account Creation Notification', () => {
                     body: '<p>Test body {username} {creator} {time}</p>'
                 }
             })
-                .its('data.jcrAccountCreationNotificationSaveSettings')
+                .its('data.jcrAccountCreationNotification.saveSettings')
                 .should('eq', true);
         });
 
@@ -67,7 +67,7 @@ describe('JCR Account Creation Notification', () => {
                 }
             });
             cy.apollo({query: getSettings})
-                .its('data.jcrAccountCreationNotificationSettings')
+                .its('data.jcrAccountCreationNotification.settings')
                 .should(s => {
                     expect(s.recipient).to.eq('roundtrip@jahia.test');
                     expect(s.subject).to.eq(testSubject);
@@ -85,7 +85,7 @@ describe('JCR Account Creation Notification', () => {
                 }
             });
             cy.apollo({query: getSettings})
-                .its('data.jcrAccountCreationNotificationSettings')
+                .its('data.jcrAccountCreationNotification.settings')
                 .should(s => {
                     expect(s.recipient).to.be.null;
                     expect(s.sender).to.be.null;
@@ -102,7 +102,7 @@ describe('JCR Account Creation Notification', () => {
                 },
                 errorPolicy: 'all'
             }).should(result => {
-                const saved = result.data?.jcrAccountCreationNotificationSaveSettings;
+                const saved = result.data?.jcrAccountCreationNotification?.saveSettings;
                 const hasErrors = result.errors && result.errors.length > 0;
                 expect(saved === false || hasErrors).to.be.true;
             });

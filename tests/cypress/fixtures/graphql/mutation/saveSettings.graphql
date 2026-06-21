@@ -1,8 +1,10 @@
 mutation saveSettings($recipient: String, $sender: String, $subject: String, $body: String) {
-    jcrAccountCreationNotificationSaveSettings(
-        recipient: $recipient
-        sender: $sender
-        subject: $subject
-        body: $body
-    )
+    jcrAccountCreationNotification {
+        saveSettings(
+            recipient: $recipient
+            sender: $sender
+            subject: $subject
+            body: $body
+        )
+    }
 }

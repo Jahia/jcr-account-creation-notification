@@ -60,8 +60,8 @@ describe('JCR Account Creation Notification — permission enforcement', () => {
         it('allows the gated query for a user granted only the module permission', () => {
             querySettingsAs(ALLOWED_USER).then((result: never) => {
                 expect(errorsOf(result), 'should have no errors').to.have.length(0);
-                const settings = (result as {data: {jcrAccountCreationNotificationSettings: {subject: string; body: string}}})
-                    .data.jcrAccountCreationNotificationSettings;
+                const settings = (result as {data: {jcrAccountCreationNotification: {settings: {subject: string; body: string}}}})
+                    .data.jcrAccountCreationNotification.settings;
                 expect(settings, 'settings payload').to.have.property('subject');
                 expect(settings, 'settings payload').to.have.property('body');
             });
