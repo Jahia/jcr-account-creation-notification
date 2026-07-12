@@ -23,6 +23,8 @@ describe('JCR Account Creation Notification — permission enforcement', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const getSettings: DocumentNode = require('graphql-tag/loader!../fixtures/graphql/query/getSettings.graphql');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const saveSettings: DocumentNode = require('graphql-tag/loader!../fixtures/graphql/mutation/saveSettings.graphql');
 
     const errorsOf = (result: {graphQLErrors?: Array<{message: string}>; errors?: Array<{message: string}>}) =>
         result.graphQLErrors ?? result.errors ?? [];
@@ -30,6 +32,20 @@ describe('JCR Account Creation Notification — permission enforcement', () => {
     const querySettingsAs = (username: string) => {
         cy.apolloClient({username, password: PASSWORD});
         return cy.apollo({query: getSettings});
+    };
+
+    const saveSettingsAs = (username: string) => {
+        cy.apolloClient({username, password: PASSWORD});
+        return cy.apollo({
+            mutation: saveSettings,
+            variables: {
+                recipient: null,
+                sender: null,
+                subject: '[{server}] denied-user save attempt',
+                body: '<p>should never be persisted</p>'
+            },
+            errorPolicy: 'all'
+        });
     };
 
     before(() => {
@@ -64,6 +80,20 @@ describe('JCR Account Creation Notification — permission enforcement', () => {
                     .data.jcrAccountCreationNotification.settings;
                 expect(settings, 'settings payload').to.have.property('subject');
                 expect(settings, 'settings payload').to.have.property('body');
+            });
+        });
+
+        // D3b: the save mutation carries the same @GraphQLRequiresPermission gate as the
+        // query; a user without the permission must be denied write access, not only read.
+        it('denies the save mutation for a user without the permission', () => {
+            saveSettingsAs(DENIED_USER).then((result: never) => {
+                const errs = errorsOf(result);
+                expect(errs, 'denial errors').to.have.length.greaterThan(0);
+                expect(errs.map((e: {message: string}) => e.message).join(' ')).to.contain('Permission denied');
+                // The mutation must not have returned a success payload.
+                const saved = (result as {data?: {jcrAccountCreationNotification?: {saveSettings?: boolean}}})
+                    .data?.jcrAccountCreationNotification?.saveSettings;
+                expect(saved, 'saveSettings payload').to.not.eq(true);
             });
         });
     });
