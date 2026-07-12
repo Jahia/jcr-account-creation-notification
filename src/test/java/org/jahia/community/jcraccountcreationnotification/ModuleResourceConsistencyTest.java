@@ -20,9 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Surefire runs with the module base directory as the working directory, so the shipped
  * source files are read via paths relative to {@code ${basedir}}.
  *
- * <p><b>Two of these tests are CHARACTERIZATION tests</b>: they assert the module's <i>current</i>
- * (defective) state so the suite stays green while documenting a known defect. Each is explicitly
- * labelled for Stage 7 to <b>invert</b> once the underlying fix lands.
+ * <p>These tests act as regression guards over shipped module files, including that the shipped
+ * OSGi config filename encodes the PID the module actually consumes, and that the build-metadata
+ * version is consistent across pom.xml, package.json and AGENTS.md.
  */
 public class ModuleResourceConsistencyTest {
 
@@ -37,22 +37,19 @@ public class ModuleResourceConsistencyTest {
     }
 
     // -----------------------------------------------------------------------
-    // D2 ⚠ CHARACTERIZATION — shipped .cfg filename PID vs consumed PID.
+    // D2 — shipped .cfg filename PID must equal the consumed PID.
     //
-    // Felix FileInstall derives the config PID from the .cfg filename. The module ships
-    // "org.jahia.modules.jcraccountcreationnotification.cfg" (PID org.jahia.MODULES...),
-    // but every consumer (ManagedService registration + the saveSettings mutation) uses
-    // JcrAccountCreationNotificationConfig.PID = "org.jahia.COMMUNITY...". They differ, so
-    // the shipped default file is delivered to a PID nothing reads and operator edits to it
-    // are silently ignored.
+    // Felix FileInstall derives the config PID from the .cfg filename. Every consumer
+    // (ManagedService registration + the saveSettings mutation) reads
+    // JcrAccountCreationNotificationConfig.PID = "org.jahia.community.jcraccountcreationnotification".
+    // The shipped default file MUST therefore be named "<that PID>.cfg", otherwise the default
+    // config is delivered to a PID nothing reads and operator edits to it are silently ignored.
     //
-    // This test documents the CURRENT (mismatched) state so it passes today. STAGE 7 fix:
-    // rename the shipped .cfg to <consumer PID>.cfg (keeping the "# default configuration"
-    // first line) and INVERT this test to assert the shipped PID EQUALS the consumer PID.
+    // Regression guard: keeps the shipped filename and the consumed PID from diverging again.
     // -----------------------------------------------------------------------
 
     @Test
-    public void d2_shippedCfgPid_currentlyMismatchesConsumerPid_characterization() {
+    public void d2_shippedCfgFilename_matchesConsumedPid() {
         final File configDir = new File(CONFIG_DIR);
         assertThat(configDir)
                 .as("configurations directory should exist: %s", CONFIG_DIR)
@@ -66,15 +63,15 @@ public class ModuleResourceConsistencyTest {
                 .map(name -> name.substring(0, name.length() - ".cfg".length()))
                 .collect(Collectors.toList());
 
-        // Exactly one default config is shipped today.
+        // Exactly one default config is shipped.
         assertThat(shippedPids).hasSize(1);
         final String shippedPid = shippedPids.get(0);
 
-        // CURRENT (defective) state: the shipped filename encodes the wrong PID namespace.
-        assertThat(shippedPid).isEqualTo("org.jahia.modules.jcraccountcreationnotification");
+        // The shipped filename must encode exactly the PID the module consumes.
         assertThat(shippedPid)
-                .as("STAGE-7: after the rename this must become isEqualTo(...) — see class doc")
-                .isNotEqualTo(JcrAccountCreationNotificationConfig.PID);
+                .as("shipped .cfg filename PID must equal the consumed config PID so "
+                        + "Felix FileInstall delivers operator edits to the PID the module reads")
+                .isEqualTo(JcrAccountCreationNotificationConfig.PID);
     }
 
     // -----------------------------------------------------------------------
@@ -100,11 +97,8 @@ public class ModuleResourceConsistencyTest {
     }
 
     // -----------------------------------------------------------------------
-    // D1 CHARACTERIZATION — version drift across build metadata.
-    //
-    // pom.xml is authoritative for the Maven build; package.json and AGENTS.md have drifted.
-    // Documents the CURRENT distinct values so it passes today. STAGE 7 fix: reconcile all
-    // three to a single version and INVERT this to assert pom == package.json == AGENTS.md.
+    // D1 CHARACTERIZATION — version drift across build metadata (temporary).
+    // Reconciled and inverted to a guard in the following commit.
     // -----------------------------------------------------------------------
 
     @Test
@@ -115,13 +109,11 @@ public class ModuleResourceConsistencyTest {
         final String agentsVersion = firstMatch(readFile("AGENTS.md"),
                 "\\*\\*version\\*\\*.*?`([0-9]+\\.[0-9]+\\.[0-9]+[^`]*)`");
 
-        // CURRENT (drifted) values.
         assertThat(pomVersion).isEqualTo("2.0.3-SNAPSHOT");
         assertThat(pkgVersion).isEqualTo("2.0.0-SNAPSHOT");
         assertThat(agentsVersion).isEqualTo("2.0.1-SNAPSHOT");
 
         assertThat(List.of(pomVersion, pkgVersion, agentsVersion).stream().distinct().count())
-                .as("STAGE-7: reconcile to one version, then assert all three are equal")
                 .isGreaterThan(1L);
     }
 
