@@ -4,7 +4,7 @@ Jahia OSGi module that sends an email notification whenever a new JCR user accou
 
 ## Key Facts
 
-- **artifactId**: `jcr-account-creation-notification` | **version**: `2.0.1-SNAPSHOT`
+- **artifactId**: `jcr-account-creation-notification` | **version**: `2.0.3-SNAPSHOT`
 - **Java package**: `org.jahia.community.jcraccountcreationnotification`
 - **jahia-depends**: `default,graphql-dxm-provider,richtext-ckeditor5`
 - **OSGi config PID**: `org.jahia.community.jcraccountcreationnotification`

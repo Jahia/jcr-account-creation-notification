@@ -97,24 +97,27 @@ public class ModuleResourceConsistencyTest {
     }
 
     // -----------------------------------------------------------------------
-    // D1 CHARACTERIZATION — version drift across build metadata (temporary).
-    // Reconciled and inverted to a guard in the following commit.
+    // D1 — build-metadata version must be consistent across all sources.
+    //
+    // pom.xml is authoritative for the Maven build; package.json and AGENTS.md must agree with it.
+    // Regression guard: keeps the three version declarations from drifting apart again.
     // -----------------------------------------------------------------------
 
     @Test
-    public void d1_versionMetadata_currentlyDrifts_characterization() throws IOException {
+    public void d1_versionMetadata_isConsistentAcrossSources() throws IOException {
         final String pomVersion = moduleVersionFromPom(readFile("pom.xml"));
         final String pkgVersion = firstMatch(readFile("package.json"),
                 "\"version\"\\s*:\\s*\"([^\"]+)\"");
         final String agentsVersion = firstMatch(readFile("AGENTS.md"),
                 "\\*\\*version\\*\\*.*?`([0-9]+\\.[0-9]+\\.[0-9]+[^`]*)`");
 
-        assertThat(pomVersion).isEqualTo("2.0.3-SNAPSHOT");
-        assertThat(pkgVersion).isEqualTo("2.0.0-SNAPSHOT");
-        assertThat(agentsVersion).isEqualTo("2.0.1-SNAPSHOT");
-
-        assertThat(List.of(pomVersion, pkgVersion, agentsVersion).stream().distinct().count())
-                .isGreaterThan(1L);
+        // pom.xml is authoritative; the other two must match it.
+        assertThat(pkgVersion)
+                .as("package.json version must match the authoritative pom.xml version")
+                .isEqualTo(pomVersion);
+        assertThat(agentsVersion)
+                .as("AGENTS.md version must match the authoritative pom.xml version")
+                .isEqualTo(pomVersion);
     }
 
     /** Module version = the {@code <version>} immediately after the closing {@code </parent>}. */
