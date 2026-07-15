@@ -70,6 +70,20 @@
             <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
+        <!--
+            mockito-inline activates Mockito's inline mock maker, enabling mockStatic(...) for
+            final classes and static methods. Required to unit-test the graphql-dxm extension
+            classes (Query/Mutation), which are instantiated by graphql-dxm via a no-arg
+            constructor with no DI seam, and to intercept the JCRSessionFactory / SettingsBean /
+            InetAddress / BundleUtils statics without adding production test seams.
+            Version pinned to match mockito-core (4.11.0) to avoid classpath skew.
+        -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>4.11.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <repositories>

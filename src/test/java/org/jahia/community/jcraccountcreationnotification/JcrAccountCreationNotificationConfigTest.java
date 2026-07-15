@@ -147,6 +147,26 @@ public class JcrAccountCreationNotificationConfigTest {
     }
 
     // -----------------------------------------------------------------------
+    // D4 (case 2) — file-based config performs NO email validation: raw values
+    // are stored verbatim. Unlike the GraphQL mutation (which rejects malformed
+    // addresses), an operator-edited .cfg with a bad recipient/sender is accepted
+    // here; the invalid recipient is only caught later at send time (see U4).
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void updated_invalidEmails_storedRawWithoutValidation() throws Exception {
+        // Arrange
+        final JcrAccountCreationNotificationConfig config = freshConfig();
+
+        // Act — deliberately malformed recipient and sender
+        config.updated(dict("not-an-email", "also-bad", "Subject", "Body"));
+
+        // Assert — stored exactly as supplied, no exception, no normalisation
+        assertThat(config.getRecipient()).isEqualTo("not-an-email");
+        assertThat(config.getSender()).isEqualTo("also-bad");
+    }
+
+    // -----------------------------------------------------------------------
     // PID constant
     // -----------------------------------------------------------------------
 

@@ -14,6 +14,7 @@ import javax.jcr.observation.Event;
 import javax.jcr.observation.EventIterator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -244,6 +245,75 @@ public class JcrAccountCreationListenerBehaviourTest {
     // -----------------------------------------------------------------------
     // RepositoryException (dead session) — stops the whole batch, does not flood
     // -----------------------------------------------------------------------
+
+    // -----------------------------------------------------------------------
+    // U6 — mail-send RuntimeException must be swallowed (SMTP failure never
+    // breaks JCR account creation, no retry)
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void handleUserCreation_mailSendThrowsRuntimeException_isSwallowed() throws Exception {
+        // Arrange — valid snapshot + enabled mail, but the transport blows up on send
+        doThrow(new RuntimeException("smtp down")).when(mailService)
+                .sendMessage(any(), any(), any(), any(), any(), any(), any());
+
+        // Act + Assert — the exception must not escape handleUserCreation
+        assertThatCode(() -> listener.handleUserCreation(event)).doesNotThrowAnyException();
+
+        // Assert — the send was attempted exactly once (no retry loop)
+        verify(mailService, times(1)).sendMessage(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    // -----------------------------------------------------------------------
+    // U7 — creator falls back to "system" when the event has no userID
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void handleUserCreation_nullUserId_creatorDefaultsToSystem() throws Exception {
+        // Arrange — no triggering user; body echoes the {creator} token
+        when(event.getUserID()).thenReturn(null);
+        when(config.getSnapshot()).thenReturn(new JcrAccountCreationNotificationConfig.Snapshot(
+                "admin@example.com",
+                "noreply@example.com",
+                "New user",
+                "<p>Created by {creator}</p>"));
+
+        // Act
+        listener.handleUserCreation(event);
+
+        // Assert — the {creator} token was substituted with the literal "system"
+        final ArgumentCaptor<String> bodyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mailService).sendMessage(
+                any(), any(), isNull(), isNull(), anyString(), isNull(), bodyCaptor.capture());
+        assertThat(bodyCaptor.getValue())
+                .contains("system")
+                .doesNotContain("{creator}");
+    }
+
+    // -----------------------------------------------------------------------
+    // D4 (case 3) — the sender is NOT re-validated at send time: an invalid
+    // configured sender is passed through (only CRLF-sanitized), whereas an
+    // invalid recipient would have skipped the notification (see U4). This
+    // documents the recipient-only send-time validation asymmetry.
+    // -----------------------------------------------------------------------
+
+    @Test
+    public void handleUserCreation_invalidSender_notValidatedAtSendTime_stillSends() throws Exception {
+        // Arrange — sender has no '@' (would fail isValidEmail) but recipient is valid
+        when(config.getSnapshot()).thenReturn(new JcrAccountCreationNotificationConfig.Snapshot(
+                "admin@example.com",
+                "bad-sender",
+                "New user",
+                "<p>body</p>"));
+
+        // Act
+        listener.handleUserCreation(event);
+
+        // Assert — the invalid sender is passed straight through to MailService
+        verify(mailService).sendMessage(
+                eq("bad-sender"), eq("admin@example.com"),
+                isNull(), isNull(), anyString(), isNull(), anyString());
+    }
 
     @Test
     public void onEvent_repositoryException_breaksBatchWithoutConsumingRemainingEvents() throws Exception {
