@@ -40,6 +40,12 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # ckeditor5-react 12 needs ckeditor5 >= 49; the editor comes from the platform's richtext-ckeditor5 MF remote
+      - dependency-name: "@ckeditor/ckeditor5-react"
+        update-types: ["version-update:semver-major"]
+      # js-yaml 5 is a runtime major (API changes); skipped in #55, needs a manual migration
+      - dependency-name: "js-yaml"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "npm"
     directory: "/tests"
