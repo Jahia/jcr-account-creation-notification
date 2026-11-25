@@ -1,6 +1,6 @@
 {
   "name": "@jahia/jcr-account-creation-notification",
-  "version": "2.0.3-SNAPSHOT",
+  "version": "2.0.3",
   "scripts": {
     "build": "yarn webpack",
     "webpack": "webpack",
